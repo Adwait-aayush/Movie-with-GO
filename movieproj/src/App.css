@@ -1,0 +1,74 @@
+* {
+    font-family: 'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif;
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+.hdrpbtn {
+    margin-top: 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 20px;
+}
+
+.header {
+    font-family: 'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif;
+    font-size: 48px;
+}
+
+.Signbtn {
+    margin-right: 12px;
+    background-color: rgb(107, 166, 17);
+    color: white;
+    border: none;
+    width: 100px;
+    height: 45px;
+    border-radius: 12px;
+    cursor: pointer;
+    font-size: 16px;
+}
+
+.Signbtn:hover {
+    background-color: #d4d4d4;
+}
+
+hr{
+    
+        width: 90%; 
+        height: 5px;
+        background-color: #897d7d; 
+        border: none;
+        margin: 20px auto; 
+    
+    
+}
+.sidebar{
+    background-color: rgb(107, 166, 17);
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-around;
+   
+        height: 68px;
+        width: 100vw;
+        margin-top: -13px; 
+}
+.innav link{
+    flex-grow: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+   border:1px solid white;
+    height: 100%;
+    cursor: pointer;
+    background-color: rgb(107, 166, 17);
+    font-family: Arial, sans-serif;
+    font-size: 16px;
+    transition: background-color 0.3s;
+}
+
+.innav:hover {
+    background-color: #d4d4d4;
+}
