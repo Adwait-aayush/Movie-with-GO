@@ -7,6 +7,7 @@ export default function Login() {
   const {setjwttok}=useOutletContext()
   const {setalertmsg}=useOutletContext()
   const {setalertclass}=useOutletContext()
+  const {toggleRefresh}=useOutletContext()
   const navigate=useNavigate()
     const handlesubmit=(e)=>{
         e.preventDefault()
@@ -32,7 +33,7 @@ export default function Login() {
         }else{
             setjwttok(data.access_token)
             setalertclass("alert-success")
-           
+            toggleRefresh(true)
             navigate("/")
         }
        })

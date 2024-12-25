@@ -9,37 +9,71 @@ function App() {
   const [jwttok, setjwttok] = useState("he")
   const [alertmsg,setalertmsg]=useState('')
   const [alertclass,setalertclass]=useState('d-none')
-const logout=()=>{
-  setjwttok('')
-  navigate("/login")
-
-}
-useEffect(() => {
-  const refreshToken = async () => {
-    if (jwttok === "") {
-      try {
-        const response = await fetch("http://localhost:8080/refresh", {
-          method: "GET",
-          credentials: "include"
-        });
-        
-        if (!response.ok) {
-          throw new Error('Refresh failed');
-        }
-        
-        const data = await response.json();
-        if (data.access_token) {
-          setjwttok(data.access_token);
-        }
-      } catch (error) {
-        console.error("Error refreshing token:", error);
-        
-      }
+  const [tickinterval,settickinterval]=useState()
+  const logout = () => {
+    const requestoptions={
+      method:"GET",
+      credentials:"include"
     }
-  };
+    fetch(`http://localhost:8080/logout`,requestoptions)
+    .catch(e=>{
+      console.log(e)
+    })
+    .finally(()=>{
+      setjwttok("")
+      toggleRefresh(false)
+    })
+    navigate("/login")
 
-  refreshToken();
-}, [jwttok]);
+  }
+
+  const toggleRefresh=useCallback((status)=>{
+    if(status){
+     let i=setInterval(()=>{
+      const requestoptions = {
+        method: "GET",
+        credentials: "include"
+      }
+      fetch(`http://localhost:8080/refresh`, requestoptions)
+        .then(response => response.json())
+        .then(data => {
+          if (data.access_token) {
+            setjwttok(data.access_token)
+          }
+        }
+        )
+        .catch(error => console.error(error))
+      
+     },600000);
+     settickinterval(i)
+
+    }
+    else{
+      settickinterval(null)
+      clearInterval(tickinterval)
+      
+    }
+  },[tickinterval])
+
+
+  useEffect(() => {
+    if (jwttok === "") {
+      const requestoptions = {
+        method: "GET",
+        credentials: "include"
+      }
+      fetch(`http://localhost:8080/refresh`, requestoptions)
+        .then(response => response.json())
+        .then(data => {
+          if (data.access_token) {
+            setjwttok(data.access_token)
+            toggleRefresh(true)
+          }
+        }
+        )
+        .catch(error => console.error(error))
+    }
+  },[jwttok,toggleRefresh])
   return (
     <>
       <div className="hdrpbtn">
@@ -62,7 +96,7 @@ useEffect(() => {
       </div>
       <Alert message={alertmsg}
       className={alertclass}/>
-      <Outlet  context={{jwttok,setjwttok,setalertclass,setalertmsg}}/>
+      <Outlet  context={{jwttok,setjwttok,setalertclass,setalertmsg,toggleRefresh}}/>
     </>
   )
 }
