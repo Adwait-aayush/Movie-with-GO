@@ -20,17 +20,19 @@ type application struct {
 	CookieDomain string
 
 	DB repository.Databaserepo
+	APIKey string
 }
 
 func main() {
 	var app application
 
 	flag.StringVar(&app.DNS, "dns", "host=localhost port=5432 user=postgres password=postgres dbname=movies sslmode=disable timezone=UTC connect_timeout=5", "postgress datab connection")
-	flag.StringVar(&app.JWTSecret, "jwt-secret", "secret", "Signinsecret")
+	flag.StringVar(&app.JWTSecret, "jwt-secret", "verysecret", "Signinsecret")
 	flag.StringVar(&app.JWTIssuer, "jwt-issuer", "example.com", "Signinissuer")
 	flag.StringVar(&app.JWTAudience, "jwt-audience", "example.com", "Signinaudience")
 	flag.StringVar(&app.CookieDomain, "cookie-domain", "localhost", "cookie domain")
 	flag.StringVar(&app.Domain, "domain", "example.com", "domain")
+	flag.StringVar(&app.APIKey, "api-key", "0b124068ce1417120e20cb21c5e5213e", "api key")
 	
 	flag.Parse()
 

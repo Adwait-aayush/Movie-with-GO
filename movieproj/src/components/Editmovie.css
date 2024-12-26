@@ -64,3 +64,14 @@ button.submit-btn {
 button.submit-btn:hover {
     background-color: #45a049;
 }
+.alert {
+    padding: 1rem;
+    margin-bottom: 1rem;
+    border-radius: 4px;
+}
+
+.alert-danger {
+    background-color: #f8d7da;
+    border: 1px solid #f5c6cb;
+    color: #721c24;
+}

@@ -233,3 +233,110 @@ func (m *Postgresdbrepo) GetUserByID(id int) (*models.User, error) {
 	}
 	return &user, nil
 }
+
+func (m *Postgresdbrepo)AllGenres()([]*models.Genre,error){
+	ctx, cancel := context.WithTimeout(context.Background(), dbtimeout)
+	defer cancel()
+
+	query:=`select id,genre,created_at,updated_at from genres order by genre`
+
+	rows,err:=m.Db.QueryContext(ctx,query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var genres []*models.Genre
+	for rows.Next() {
+		var g models.Genre
+		err = rows.Scan(
+			&g.ID,
+			&g.Genre,
+			&g.CreatedAt,
+			&g.UpdatedAt,
+
+		)
+		if err != nil {
+			return nil, err
+		}
+		genres = append(genres, &g)
+
+	}
+	return genres,nil
+}
+
+
+func (m *Postgresdbrepo) InsertMovie(movie models.Movie)(int,error){
+	ctx, cancel := context.WithTimeout(context.Background(), dbtimeout)
+	defer cancel()
+	stmt:=`insert into movies
+	(title,description,release_date,runtime,mpaa_rating,created_at,updated_at,image) 
+	values($1,$2,$3,$4,$5,$6,$7,$8) returning id`
+	var newID int
+	err:= m.Db.QueryRowContext(ctx,stmt,
+		movie.Title,
+		movie.Description,
+		movie.ReleaseDate,
+		movie.Runtime,
+		movie.Rating,
+		movie.CreatedAt,
+		movie.UpdatedAt,
+		movie.Image).Scan(&newID)
+
+	if err != nil {
+		return 0, err
+	}
+	return newID,nil
+}
+func (m *Postgresdbrepo)UpdateMovie(movie models.Movie)error{
+	ctx, cancel := context.WithTimeout(context.Background(), dbtimeout)
+	defer cancel()
+	stmt:=`update movies set title=$1,description=$2,release_date=$3,runtime=$4,
+	mpaa_rating=$5,updated_at=$6,image=$7 where id=$8`
+
+	_,err:=m.Db.ExecContext(ctx,stmt,
+		movie.Title,
+		movie.Description,
+		movie.ReleaseDate,
+		movie.Runtime,
+		movie.Rating,
+		movie.UpdatedAt,
+		movie.Image,
+		movie.ID)
+	if err!=nil{
+		return err
+	}
+	return nil
+}
+
+func (m *Postgresdbrepo)UpdateMovieGenres(id int,genreIDs []int)error{
+	ctx, cancel := context.WithTimeout(context.Background(), dbtimeout)
+	defer cancel()
+
+	stmt:=`delete from movies_genres where movie_id=$1`
+	_, err := m.Db.ExecContext(ctx, stmt, id)
+	if err != nil {
+		return err
+	}
+	for _,n:=range genreIDs{
+		stmt:=`insert into movies_genres (movie_id,genre_id)
+		values ($1,$2)`
+		_,err:=m.Db.ExecContext(ctx,stmt,id,n)
+		if err != nil {
+			return err
+		}
+
+	}
+	return nil
+}
+
+
+func (m *Postgresdbrepo) DeleteMovie(id int)error{
+	ctx, cancel := context.WithTimeout(context.Background(), dbtimeout)
+	defer cancel()
+	stmt:=`delete from movies where id=$1`
+	_,err:=m.Db.ExecContext(ctx,stmt,id)
+	if err!=nil{
+		return err
+	}
+	return nil
+}

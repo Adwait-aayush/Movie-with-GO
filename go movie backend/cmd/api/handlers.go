@@ -2,9 +2,15 @@ package main
 
 import (
 	"backend/internal/models"
+	"encoding/json"
 	"errors"
+	"fmt"
+	"io"
+	"log"
 	"net/http"
+	"net/url"
 	"strconv"
+	"time"
 
 	"github.com/go-chi/chi"
 	"github.com/golang-jwt/jwt/v4"
@@ -52,10 +58,11 @@ func (app *application) authenticate(w http.ResponseWriter, r *http.Request) {
 		app.ErrorJson(w, err)
 		return
 	}
+
 	//check pass
 	valid, err := user.PasswordMatches(requestPayload.Password)
 	if err != nil || !valid {
-		app.ErrorJson(w, errors.New("password not found"))
+		app.ErrorJson(w, errors.New("password not found"), http.StatusBadRequest)
 		return
 	}
 
@@ -74,6 +81,7 @@ func (app *application) authenticate(w http.ResponseWriter, r *http.Request) {
 
 	refreshCookie := app.auth.GetRefershCookie(tokens.Refresh)
 	http.SetCookie(w, refreshCookie)
+
 	app.WriteJson(w, http.StatusAccepted, tokens)
 }
 
@@ -112,6 +120,7 @@ func (app *application) refreshToken(w http.ResponseWriter, r *http.Request) {
 			}
 			http.SetCookie(w, app.auth.GetRefershCookie(tokenPairs.Refresh))
 			app.WriteJson(w, http.StatusOK, tokenPairs)
+
 		}
 	}
 }
@@ -120,6 +129,18 @@ func (app *application) logout(w http.ResponseWriter, r *http.Request) {
 	http.SetCookie(w, app.auth.GetExpiredRefershCookie())
 	w.WriteHeader(http.StatusAccepted)
 }
+
+func (app *application) MovieCatalogue(w http.ResponseWriter, r *http.Request) {
+	movies, err := app.DB.AllMovies()
+	if err != nil {
+		app.ErrorJson(w, err)
+		return
+	}
+
+	app.WriteJson(w, http.StatusOK, movies)
+
+}
+
 func (app *application) GetMovie(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 	movieID, err := strconv.Atoi(id)
@@ -154,4 +175,136 @@ func (app *application) MovieForEdit(w http.ResponseWriter, r *http.Request) {
 	}
 	_ = app.WriteJson(w, http.StatusOK, payload)
 
+}
+func (app *application) AllGenres(w http.ResponseWriter, r *http.Request) {
+	genres, err := app.DB.AllGenres()
+	if err != nil {
+		app.ErrorJson(w, err)
+	}
+	_ = app.WriteJson(w, http.StatusOK, genres)
+}
+
+func (app *application) InsertMovie(w http.ResponseWriter, r *http.Request) {
+	var movie models.Movie
+	err := app.ReadJson(w, r, &movie)
+	if err != nil {
+		app.ErrorJson(w,err)
+		return
+
+	}
+	//image
+
+	movie = app.GetPoster(movie)
+	movie.CreatedAt = time.Now()
+	movie.UpdatedAt = time.Now()
+
+
+	newID,err:=app.DB.InsertMovie(movie)
+	if err != nil {
+		app.ErrorJson(w,err)
+		return
+	}
+	//genre
+    err=app.DB.UpdateMovieGenres(newID,movie.GenresArray)
+	if err != nil {
+		app.ErrorJson(w, err)
+		return
+	}
+
+
+
+	resp := JSONResponse{
+		Error:   false,
+		Message: "Movie inserted successfully",
+	}
+	app.WriteJson(w, http.StatusAccepted, resp)
+}
+
+func (app *application) GetPoster(movie models.Movie) models.Movie {
+	type TheMovieDB struct {
+		Page    int `json:"page"`
+		Results []struct {
+			PosterPath string `json:"poster_path"`
+		} `json:"results"`
+		TotalPages int `json:"total_pages"`
+	}
+
+	client := &http.Client{}
+	theUrl := fmt.Sprintf("http://api.themoviedb.org/3/search/movie?api_key=%s", app.APIKey)
+	req, err := http.NewRequest("GET", theUrl+"&query="+url.QueryEscape(movie.Title), nil)
+	if err != nil {
+		log.Println(err)
+		return movie
+	}
+	req.Header.Add("Accept", "application/json")
+	req.Header.Add("Content-Type", "application/json")
+
+	resp, err := client.Do(req)
+	if err != nil {
+		log.Println(err)
+		return movie
+	}
+	defer resp.Body.Close()
+
+	bodyBytes, err := io.ReadAll(resp.Body)
+	if err != nil {
+		log.Println(err)
+		return movie
+	}
+	var responseobject TheMovieDB
+	json.Unmarshal(bodyBytes, &responseobject)
+	if len(responseobject.Results) > 0 {
+		movie.Image = responseobject.Results[0].PosterPath
+	}
+	return movie
+
+}
+
+func (app *application)Updatemovie(w http.ResponseWriter,r *http.Request){
+	var payload models.Movie
+	err:=app.ReadJson(w,r,&payload)
+	if err!=nil{
+		app.ErrorJson(w,err)
+		return
+	}
+	movie,err:=app.DB.OneMovie(payload.ID)
+	if err!=nil{
+		app.ErrorJson(w,err)	
+		return
+	}
+	movie.Title=payload.Title
+	movie.ReleaseDate=payload.ReleaseDate
+	movie.Description=payload.Description
+	movie.Rating=payload.Rating
+	movie.Runtime=payload.Runtime
+	movie.UpdatedAt=time.Now()
+
+	err=app.DB.UpdateMovie(*movie)
+	if err!=nil{
+		app.ErrorJson(w,err)
+		return
+	}
+
+resp:=JSONResponse{
+	Error: false,
+	Message: "Movie updated successfully",
+}
+app.WriteJson(w,http.StatusAccepted,resp)
+}
+func (app *application) DeleteMovie (w http.ResponseWriter,r*http.Request){
+	id,err:=strconv.Atoi(chi.URLParam(r,"id"))
+	if err!=nil{
+		app.ErrorJson(w,err)
+		return
+	}
+	err=app.DB.DeleteMovie(id)
+	if err!=nil{
+		app.ErrorJson(w,err)
+		return
+	}
+	resp:=JSONResponse{
+		Error: false,
+		Message: "Movie deleted successfully",
+	}
+	app.WriteJson(w,http.StatusAccepted,resp)
 }

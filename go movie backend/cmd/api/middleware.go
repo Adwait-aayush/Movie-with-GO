@@ -10,7 +10,7 @@ func (app *application) enableCORS(h http.Handler) http.Handler {
 			w.Header().Set("Access-Control-Allow-Credentials", "true")
 			w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, PATCH")
 			w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Accept, X-CSRF-Token, Authorization")
-			
+
 		}
 
 		if r.Method == "OPTIONS" {
@@ -20,5 +20,15 @@ func (app *application) enableCORS(h http.Handler) http.Handler {
 
 			h.ServeHTTP(w, r)
 		}
+	})
+}
+
+func (app *application) authrequired(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _, err := app.auth.GetTokenFromHeaderAndVerify(w, r)
+		if err != nil {
+			w.WriteHeader(http.StatusUnauthorized)
+		}
+		next.ServeHTTP(w,r)
 	})
 }

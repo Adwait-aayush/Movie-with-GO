@@ -20,6 +20,7 @@ type Auth struct {
 	CookiePath    string
 	CookieName    string
 }
+
 type jwtUser struct {
 	ID        int    `json:"id"`
 	FirstName string `json:"first_name"`
@@ -75,9 +76,9 @@ func (j *Auth) GetRefershCookie(refreshToken string) *http.Cookie {
 		Value:    refreshToken,
 		Expires:  time.Now().Add(j.RefreshExpiry),
 		MaxAge:   int(j.RefreshExpiry.Seconds()),
-		Secure:   true,
+		Secure:   false,
 		Domain:   j.CookieDomain,
-		SameSite: http.SameSiteNoneMode,
+		SameSite: http.SameSiteStrictMode,
 		HttpOnly: true,
 	}
 }
@@ -88,9 +89,9 @@ func (j *Auth) GetExpiredRefershCookie() *http.Cookie {
 		Value:    "",
 		Expires:  time.Unix(0, 0),
 		MaxAge:   -1,
-		Secure:   true,
+		Secure:   false,
 		Domain:   j.CookieDomain,
-		SameSite: http.SameSiteNoneMode,
+		SameSite: http.SameSiteStrictMode,
 		HttpOnly: true,
 	}
 }
@@ -115,19 +116,19 @@ func (j *Auth) GetTokenFromHeaderAndVerify(w http.ResponseWriter, r *http.Reques
 
 	_, err := jwt.ParseWithClaims(token, claims, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, errors.New("invalid token method")
+			return  nil, errors.New("invalid token method")
 		}
 		return []byte(j.Secret), nil
 	})
 	if err != nil {
-		if strings.HasPrefix(err.Error(), "token is expired by") {
+		if strings.HasPrefix(err.Error(),"token is expired by"){
 			return "", nil, errors.New("token is expired")
 		}
-		return "", nil, err
+		return "",nil,err
 	}
 
-	if claims.Issuer != j.Issuer {
-		return "", nil, errors.New("issuer is not valid")
+	if claims.Issuer!=j.Issuer{
+		return "",nil,errors.New("issuer is not valid")
 	}
-	return token, claims, nil
+	return token,claims,nil
 }
