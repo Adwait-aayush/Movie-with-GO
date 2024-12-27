@@ -1,6 +1,7 @@
 package main
 
 import (
+	"backend/internal/graph"
 	"backend/internal/models"
 	"encoding/json"
 	"errors"
@@ -188,7 +189,7 @@ func (app *application) InsertMovie(w http.ResponseWriter, r *http.Request) {
 	var movie models.Movie
 	err := app.ReadJson(w, r, &movie)
 	if err != nil {
-		app.ErrorJson(w,err)
+		app.ErrorJson(w, err)
 		return
 
 	}
@@ -198,20 +199,17 @@ func (app *application) InsertMovie(w http.ResponseWriter, r *http.Request) {
 	movie.CreatedAt = time.Now()
 	movie.UpdatedAt = time.Now()
 
-
-	newID,err:=app.DB.InsertMovie(movie)
-	if err != nil {
-		app.ErrorJson(w,err)
-		return
-	}
-	//genre
-    err=app.DB.UpdateMovieGenres(newID,movie.GenresArray)
+	newID, err := app.DB.InsertMovie(movie)
 	if err != nil {
 		app.ErrorJson(w, err)
 		return
 	}
-
-
+	//genre
+	err = app.DB.UpdateMovieGenres(newID, movie.GenresArray)
+	if err != nil {
+		app.ErrorJson(w, err)
+		return
+	}
 
 	resp := JSONResponse{
 		Error:   false,
@@ -260,51 +258,86 @@ func (app *application) GetPoster(movie models.Movie) models.Movie {
 
 }
 
-func (app *application)Updatemovie(w http.ResponseWriter,r *http.Request){
+func (app *application) Updatemovie(w http.ResponseWriter, r *http.Request) {
 	var payload models.Movie
-	err:=app.ReadJson(w,r,&payload)
-	if err!=nil{
-		app.ErrorJson(w,err)
+	err := app.ReadJson(w, r, &payload)
+	if err != nil {
+		app.ErrorJson(w, err)
 		return
 	}
-	movie,err:=app.DB.OneMovie(payload.ID)
-	if err!=nil{
-		app.ErrorJson(w,err)	
+	movie, err := app.DB.OneMovie(payload.ID)
+	if err != nil {
+		app.ErrorJson(w, err)
 		return
 	}
-	movie.Title=payload.Title
-	movie.ReleaseDate=payload.ReleaseDate
-	movie.Description=payload.Description
-	movie.Rating=payload.Rating
-	movie.Runtime=payload.Runtime
-	movie.UpdatedAt=time.Now()
+	movie.Title = payload.Title
+	movie.ReleaseDate = payload.ReleaseDate
+	movie.Description = payload.Description
+	movie.Rating = payload.Rating
+	movie.Runtime = payload.Runtime
+	movie.UpdatedAt = time.Now()
 
-	err=app.DB.UpdateMovie(*movie)
-	if err!=nil{
-		app.ErrorJson(w,err)
+	err = app.DB.UpdateMovie(*movie)
+	if err != nil {
+		app.ErrorJson(w, err)
 		return
 	}
 
-resp:=JSONResponse{
-	Error: false,
-	Message: "Movie updated successfully",
+	resp := JSONResponse{
+		Error:   false,
+		Message: "Movie updated successfully",
+	}
+	app.WriteJson(w, http.StatusAccepted, resp)
 }
-app.WriteJson(w,http.StatusAccepted,resp)
-}
-func (app *application) DeleteMovie (w http.ResponseWriter,r*http.Request){
-	id,err:=strconv.Atoi(chi.URLParam(r,"id"))
-	if err!=nil{
-		app.ErrorJson(w,err)
+func (app *application) DeleteMovie(w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.Atoi(chi.URLParam(r, "id"))
+	if err != nil {
+		app.ErrorJson(w, err)
 		return
 	}
-	err=app.DB.DeleteMovie(id)
-	if err!=nil{
-		app.ErrorJson(w,err)
+	err = app.DB.DeleteMovie(id)
+	if err != nil {
+		app.ErrorJson(w, err)
 		return
 	}
-	resp:=JSONResponse{
-		Error: false,
+	resp := JSONResponse{
+		Error:   false,
 		Message: "Movie deleted successfully",
 	}
-	app.WriteJson(w,http.StatusAccepted,resp)
+	app.WriteJson(w, http.StatusAccepted, resp)
+}
+
+func (app *application) AllmoviesBygenre(w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.Atoi(chi.URLParam(r, "id"))
+	if err != nil {
+		app.ErrorJson(w, err)
+		return
+	}
+	movies, err := app.DB.AllMovies(id)
+	if err != nil {
+		app.ErrorJson(w, err)
+		return
+	}
+	app.WriteJson(w, http.StatusOK, movies)
+}
+
+func (app *application) graphqlmovs(w http.ResponseWriter, r *http.Request) {
+	movies, _ := app.DB.AllMovies()
+
+	q, _ := io.ReadAll(r.Body)
+	query := string(q)
+
+	g := graph.New(movies)
+
+	g.QueryString = query
+	resp, err := g.Query()
+	if err != nil {
+		app.ErrorJson(w, err)
+		return
+	}
+	j, _ := json.MarshalIndent(resp, " ", "\t")
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	w.Write(j)
+
 }

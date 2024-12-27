@@ -20,8 +20,9 @@ func (app *application) router() http.Handler {
 	mux.Get("/movies/{id}", app.GetMovie)
 	mux.Get("/refresh", app.refreshToken)
 	mux.Get("/logout",app.logout)
-
+    mux.Post("/graph",app.graphqlmovs)
 	mux.Get("/genres",app.AllGenres)
+	mux.Get("/movies/genres/{id}",app.AllmoviesBygenre)
 
     mux.Route("/admin",func(mux chi.Router){
 		mux.Use(app.authrequired)
