@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react"
 import { useNavigate, useOutletContext, useParams } from "react-router-dom"
 import "./Editmovie.css"
+
 import Swal from "sweetalert2"
 
 export default function EditMovie() {
