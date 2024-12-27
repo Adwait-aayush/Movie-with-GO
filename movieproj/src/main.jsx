@@ -12,6 +12,7 @@ import EditMovie from './components/EditMovie.jsx'
 import Manage from './components/Manage.jsx'
 import Graphql from './components/Graphql.jsx'
 import Movie from './components/Movie.jsx'
+import Onegenre from './components/Onegenre.jsx'
 const router = createBrowserRouter([
   {
     path: '/',
@@ -30,6 +31,10 @@ const router = createBrowserRouter([
       {
         path: '/genre',
         element: <Genre />,
+      },
+      {
+        path: '/genre/:id',
+        element: <Onegenre />,
       },
       {
         path:'/login',

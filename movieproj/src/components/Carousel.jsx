@@ -1,15 +1,19 @@
 import React, { useState, useEffect } from "react";
-import './Caraousel.css'; 
+import './Caraousel.css';
+import image1 from './voPyk0.webp';
+import image2 from './329583.jpg'
+import image3 from './1561771.jpg'
+import image4 from './wp9164084.jpg'
 
 const Carousel = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
 
-  
+
   const images = [
-    "https://via.placeholder.com/600x300?text=Image+1",
-    "https://via.placeholder.com/600x300?text=Image+2",
-    "https://via.placeholder.com/600x300?text=Image+3",
-    "https://via.placeholder.com/600x300?text=Image+4",
+    `${image1}`, `${image2}`, `${image3}`, `${image4}`
+    ,
+
+
   ];
 
 
@@ -17,7 +21,7 @@ const Carousel = () => {
     setCurrentIndex((prevIndex) => (prevIndex + 1) % images.length);
   };
 
- 
+
   const prevImage = () => {
     setCurrentIndex((prevIndex) => (prevIndex - 1 + images.length) % images.length);
   };
@@ -25,7 +29,7 @@ const Carousel = () => {
 
   useEffect(() => {
     const interval = setInterval(nextImage, 5000);
-    return () => clearInterval(interval); 
+    return () => clearInterval(interval);
   }, []);
 
   return (
